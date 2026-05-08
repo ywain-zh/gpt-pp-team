@@ -32,6 +32,14 @@ ChatGPT Team 订阅协议的端到端重放工具，附带从零实现的 hCaptc
 
 ---
 
+## 作者自营 · API 中转
+
+| Logo | 名称 | 介绍 | 官网 |
+| --- | --- | --- | --- |
+| <a href="https://api.lukyface.com/" target="_blank"><img src="docs/images/sponsors/lukyface.png" alt="lukyface API" width="140" /></a> | lukyface API（作者自营） | 统一的 AI 模型聚合 / 分发网关（基于 new-api），OpenAI / Claude / Gemini 三协议互转，自用余量分享。**倍率：0.1 元 ≈ 1 美元额度**（按充值实付计价），不定期降价优惠，量大可私聊议价。 | [https://api.lukyface.com/](https://api.lukyface.com/) |
+
+---
+
 > [!CAUTION]
 > **使用本项目即视为同意 [`NOTICE`](NOTICE) 的全部条款。** 项目按 AS IS 提供、无任何担保、维护者不负任何责任。仅限你拥有的系统 / 合法 CTF / 授权 bug bounty 项目 in-scope 资产 / 安全研究。**严禁**用于欺诈、规避支付、批量造号转售、违反第三方 ToS、未授权目标。一切法律责任由使用者自负。不接受条款就**不要使用**。
 
@@ -231,6 +239,7 @@ xvfb-run -a python pipeline.py --config CTF-pay/config.paypal.json --paypal --da
 | 打赏者 | 金额 |
 |---|---|
 | 两岁 | 100 元 |
+| bensema | 0.66 元 |
 | Earth NPC | 0.01 元 |
 | 小水獭 | 0.01 元 |
 
