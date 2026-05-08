@@ -248,6 +248,91 @@ def test_linking_406_exhaustion_raises():
         charger.run(stripe_pk=STRIPE_PK)
 
 
+# ────────────────── 429 risk-control bypass ──────────────────
+
+
+@responses.activate
+def test_linking_429_bypass_drops_authorization():
+    """Midtrans linking 429 风控 → 同 endpoint 重发但剥 Authorization → 201 + reference."""
+    responses.post(
+        f"https://app.midtrans.com/snap/v3/accounts/{SNAP_TOKEN}/linking",
+        json={"error_messages": ["There's a technical error"]},
+        status=429,
+    )
+    responses.post(
+        f"https://app.midtrans.com/snap/v3/accounts/{SNAP_TOKEN}/linking",
+        json={
+            "status_code": "201",
+            "activation_link_url": (
+                f"https://merchants-gws-app.gopayapi.com/app/authorize?reference={LINK_REF}&target=gwc"
+            ),
+        },
+        status=201,
+    )
+
+    charger = build_charger()
+    ref = charger._midtrans_init_linking(SNAP_TOKEN)
+    assert ref == LINK_REF
+
+    linking_calls = [
+        c for c in responses.calls
+        if c.request.url == f"https://app.midtrans.com/snap/v3/accounts/{SNAP_TOKEN}/linking"
+    ]
+    assert len(linking_calls) == 2, f"expected 2 linking calls, got {len(linking_calls)}"
+    assert "Authorization" in linking_calls[0].request.headers, "first call should carry Authorization"
+    assert "Authorization" not in linking_calls[1].request.headers, "bypass call must drop Authorization"
+
+
+@responses.activate
+def test_linking_200_with_technical_error_body_triggers_bypass():
+    """有些环境下 Midtrans 用 200 + body 含 'technical error' 表达风控，也应触发 bypass。"""
+    responses.post(
+        f"https://app.midtrans.com/snap/v3/accounts/{SNAP_TOKEN}/linking",
+        json={"error_messages": ["There's a technical error"]},
+        status=200,
+    )
+    responses.post(
+        f"https://app.midtrans.com/snap/v3/accounts/{SNAP_TOKEN}/linking",
+        json={
+            "status_code": "201",
+            "activation_link_url": (
+                f"https://merchants-gws-app.gopayapi.com/app/authorize?reference={LINK_REF}&target=gwc"
+            ),
+        },
+        status=201,
+    )
+
+    charger = build_charger()
+    ref = charger._midtrans_init_linking(SNAP_TOKEN)
+    assert ref == LINK_REF
+
+    linking_calls = [
+        c for c in responses.calls
+        if c.request.url == f"https://app.midtrans.com/snap/v3/accounts/{SNAP_TOKEN}/linking"
+    ]
+    assert len(linking_calls) == 2
+    assert "Authorization" not in linking_calls[1].request.headers
+
+
+@responses.activate
+def test_linking_429_bypass_also_fails_raises():
+    """如果 bypass 也失败（例如返回 500），抛出 GoPayError。"""
+    responses.post(
+        f"https://app.midtrans.com/snap/v3/accounts/{SNAP_TOKEN}/linking",
+        json={"error_messages": ["technical error"]},
+        status=429,
+    )
+    responses.post(
+        f"https://app.midtrans.com/snap/v3/accounts/{SNAP_TOKEN}/linking",
+        body="upstream busted",
+        status=500,
+    )
+
+    charger = build_charger()
+    with pytest.raises(gopay.GoPayError, match="bypass 失败"):
+        charger._midtrans_init_linking(SNAP_TOKEN)
+
+
 # ────────────────── OTP cancel ──────────────────
 
 
